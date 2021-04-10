@@ -1,10 +1,13 @@
 ## What does the plugin do? 
 
-The plugin adds a heart-like icon to posts. Users can clicked on the heart icon to 'like' the post. This updates the number of likes the post has. 
+The plugin adds a heart-like icon to posts. Users can clicked on the heart icon to 'like' the post. This updates the number of likes a post has. 
 
-Currently the plugin works based on cookies. A user doesn't have to login to like a post. 
 
-Future versions may have option to toggle whether use has to be logged in or not. 
+**New feature:**
+
+If user is logged out then likes are based on cookies. If the user is logged in, the likes are based on user meta. This means a logged in user can come back to the site in the future and see which posts they have liked. 
+
+Users can view their liked posts by viewing posts and seeing an active heart icon. Currently there isn't to view all liked posts in one place. 
 
 ## Demo:
 

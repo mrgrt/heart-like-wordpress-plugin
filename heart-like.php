@@ -62,7 +62,7 @@ function gt_hl_get_heart_html($post_id){
     if(gt_hl_get_post_user_heart_like($heart_likes, $post_id)){
         $heart_classes .= ' active';
     }
-	
+    
     $heart = '<div class="gt_heart_like" data-post-id="'.$post_id.'">
                 <div class="' . $heart_classes . '">
 			        <div class="heart_inner"></div>
@@ -75,14 +75,14 @@ function gt_hl_get_heart_html($post_id){
 
 }
 
-
+//$heart_likes can be cookie or user_meta
 function gt_hl_update_heart_like($heart_likes, $post_id, $operator){
 
     if(!is_array($heart_likes)){
         $heart_likes = array();
     } 
 
-    //Update the count
+    //Update the post count like
     $current_count = get_post_meta($post_id, 'heart_like_count', true);
     if($operator=="+"){
         $new_count     = $current_count + 1;
@@ -103,7 +103,14 @@ function gt_hl_update_heart_like($heart_likes, $post_id, $operator){
 
 function gt_hl_get_user_heart_likes(){
 
-    $heart_likes = json_decode(stripslashes($_COOKIE['heartlikes']), true);
+    $current_user_id = get_current_user_id();
+
+    if($current_user_id){
+        $user_like_meta = get_user_meta($current_user_id, 'gt_hl_likes', true);
+        $heart_likes = json_decode(stripslashes($user_like_meta), true);
+    } else{
+        $heart_likes = json_decode(stripslashes($_COOKIE['heartlikes']), true);
+    }
 
     if(!is_array($heart_likes)){
         $heart_likes = array();
@@ -131,25 +138,40 @@ function gt_hl_get_post_user_heart_like($heart_likes, $post_id){
 
 }
 
+function gt_hl_update_user_likes($post_id, $operator){
+
+    $heart_likes   = gt_hl_get_user_heart_likes(); 
+    $current_user_id = get_current_user_id();
+    
+    if($operator=='positive'){
+        $new_likes = gt_hl_update_heart_like($heart_likes, $post_id, "+");
+        setcookie("heartlikes", json_encode($new_likes), time()+3600, '/');
+        //If the user is logged in 
+        if($current_user_id){
+            update_user_meta($current_user_id, 'gt_hl_likes', json_encode($new_likes)); 
+        }
+    } else{
+        $new_likes = gt_hl_update_heart_like($heart_likes, $post_id, "-");
+        $updated_likes = $new_likes;
+        unset($updated_likes[$post_id]);
+        setcookie("heartlikes", json_encode($updated_likes), time()+3600, '/');
+        if($current_user_id){
+            update_user_meta($current_user_id, 'gt_hl_likes', json_encode($updated_likes)); 
+        }
+   }
+
+   return $new_likes;
+
+}
+
 add_action("wp_ajax_gt_hl_heart_like", "gt_hl_heart_like");
 add_action("wp_ajax_nopriv_gt_hl_heart_like", "gt_hl_heart_like");
 
 function gt_hl_heart_like() {
 
    $post_id       = $_POST['postId'];
-   $sign          = $_POST['sign'];
-
-   $heart_likes   = gt_hl_get_user_heart_likes();
-
-   if($sign=='positive'){
-        $new_likes = gt_hl_update_heart_like($heart_likes, $post_id, "+");
-        setcookie("heartlikes", json_encode($new_likes), time()+3600, '/');
-   } else{
-        $new_likes = gt_hl_update_heart_like($heart_likes, $post_id, "-");
-        $updated_likes = $new_likes;
-        unset($updated_likes[$post_id]);
-        setcookie("heartlikes", json_encode($updated_likes), time()+3600, '/');
-   }
+   $operator      = $_POST['sign'];
+   $new_likes     = gt_hl_update_user_likes($post_id, $operator);
 
    wp_send_json_success(array("likes" => $new_likes[$post_id]));
 
